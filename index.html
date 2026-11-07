@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Orbit</title>
+<style>
+:root{--side:#17212b;--bg:#0e1621;--hover:#202b36;--line:#0a111a;--text:#f5f5f5;--mute:#7f91a4;--acc:#5288c1;--out:#2b5278;--in:#182533;--badge:#4c9ce2}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--text);font:15px/1.4 -apple-system,Segoe UI,Roboto,sans-serif;overflow:hidden}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+input{font:inherit;color:var(--text);background:var(--bg);border:1px solid transparent;border-radius:22px;padding:10px 16px;width:100%;outline:none}
+input:focus{border-color:var(--acc)}
+.hidden{display:none!important}
+
+/* auth */
+#auth{height:100%;display:grid;place-items:center;padding:20px}
+.box{width:min(360px,100%);text-align:center}
+.logo{width:96px;height:96px;border-radius:50%;background:linear-gradient(135deg,#5288c1,#7b5cf0);display:grid;place-items:center;font-size:44px;margin:0 auto 18px}
+.box h1{font-size:26px;margin-bottom:6px}.box p{color:var(--mute);margin-bottom:22px}
+.box input{margin-bottom:10px;background:var(--side);border-radius:12px}
+.primary{width:100%;background:var(--acc);padding:12px;border-radius:12px;font-weight:600;margin-top:4px}
+.link{color:var(--acc);margin-top:14px;display:inline-block}
+.err{color:#ff6b7a;min-height:20px;margin:6px 0;font-size:14px}
+
+/* app */
+#app{height:100%;display:grid;grid-template-columns:360px 1fr}
+.side{background:var(--side);display:flex;flex-direction:column;border-right:1px solid var(--line);min-height:0}
+.top{display:flex;gap:10px;align-items:center;padding:10px 12px}
+.menu{width:40px;height:40px;border-radius:50%;flex:none;font-size:20px;color:var(--mute)}
+.menu:hover{background:var(--hover)}
+.list{flex:1;overflow:auto}
+.sect{padding:10px 16px 4px;color:var(--acc);font-size:13px;font-weight:600}
+.item{display:flex;gap:12px;padding:9px 12px;cursor:pointer;align-items:center}
+.item:hover{background:var(--hover)}.item.on{background:var(--acc)}
+.av{width:50px;height:50px;border-radius:50%;display:grid;place-items:center;font-weight:600;font-size:20px;flex:none;color:#fff}
+.meta{flex:1;min-width:0}
+.l1,.l2{display:flex;justify-content:space-between;gap:8px}
+.nm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tm{color:var(--mute);font-size:12px;flex:none}
+.pv{color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item.on .pv,.item.on .tm{color:#dbe8f6}
+.bdg{background:var(--badge);color:#fff;border-radius:12px;min-width:22px;height:22px;padding:0 7px;font-size:13px;display:grid;place-items:center;flex:none}
+.empty{color:var(--mute);text-align:center;padding:40px 24px}
+
+.conv{display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--bg) radial-gradient(circle at 30% 20%,#13202d,#0e1621 60%)}
+.head{background:var(--side);padding:8px 14px;display:flex;gap:12px;align-items:center;border-bottom:1px solid var(--line)}
+.head .av{width:42px;height:42px;font-size:17px}
+.back{display:none;font-size:22px;color:var(--mute);width:36px}
+.sub{color:var(--mute);font-size:13px}
+.msgs{flex:1;overflow:auto;padding:14px 12px;display:flex;flex-direction:column;gap:3px}
+.b{max-width:min(520px,78%);padding:7px 11px 5px;border-radius:14px;word-wrap:break-word;overflow-wrap:anywhere;white-space:pre-wrap;position:relative}
+.b.in{background:var(--in);align-self:flex-start;border-bottom-left-radius:4px}
+.b.out{background:var(--out);align-self:flex-end;border-bottom-right-radius:4px}
+.b i{font-style:normal;color:#9db3c8;font-size:11px;margin-left:10px;float:right;margin-top:6px}
+.comp{background:var(--side);padding:10px 12px;display:flex;gap:10px;align-items:center}
+.comp input{background:var(--bg);border-radius:22px}
+.send{background:var(--acc);width:42px;height:42px;border-radius:50%;flex:none;font-size:18px}
+.ph{flex:1;display:grid;place-items:center;color:var(--mute)}
+.ph span{background:#0e162188;padding:6px 14px;border-radius:16px}
+
+.pop{position:absolute;top:56px;left:12px;background:var(--side);border:1px solid var(--line);border-radius:12px;padding:8px;z-index:5;min-width:220px;box-shadow:0 8px 30px #0008}
+.pop b{display:block;padding:6px 10px}.pop div{padding:0 10px 8px;color:var(--mute);font-size:13px}
+.pop button{display:block;width:100%;text-align:left;padding:9px 10px;border-radius:8px}.pop button:hover{background:var(--hover)}
+
+@media(max-width:760px){
+ #app{grid-template-columns:1fr}
+ .conv{display:none}
+ #app.open .side{display:none}#app.open .conv{display:flex}
+ .back{display:block}
+ .b{max-width:86%}
+}
+</style>
+</head>
+<body>
+
+<div id="auth">
+ <div class="box">
+  <div class="logo">✈</div>
+  <h1 id="at">Orbit</h1><p id="as">Войдите, чтобы общаться с друзьями</p>
+  <input id="f_name" placeholder="Ваше имя" class="hidden" autocomplete="name">
+  <input id="f_user" placeholder="@юзернейм" autocapitalize="off" autocomplete="username">
+  <input id="f_pass" type="password" placeholder="Пароль" autocomplete="current-password">
+  <div class="err" id="err"></div>
+  <button class="primary" id="go">Войти</button>
+  <br><button class="link" id="sw">Создать аккаунт</button>
+ </div>
+</div>
+
+<div id="app" class="hidden">
+ <div class="side">
+  <div class="top">
+   <button class="menu" id="menu">☰</button>
+   <input id="q" placeholder="Поиск по @юзернейму" autocomplete="off">
+  </div>
+  <div class="list" id="list"></div>
+ </div>
+ <div class="conv" id="conv">
+  <div class="ph"><span>Выберите чат или найдите друга по @юзернейму</span></div>
+ </div>
+</div>
+<div class="pop hidden" id="pop"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const COLORS=['#e17076','#7bc862','#e5ca77','#65aadd','#a695e7','#ee7aae','#6ec9cb','#faa774'];
+const col=s=>COLORS[[...s].reduce((a,c)=>a+c.charCodeAt(0),0)%COLORS.length];
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const av=(n,u)=>`<div class="av" style="background:${col(u||n)}">${esc((n||'?')[0].toUpperCase())}</div>`;
+const hm=ts=>new Date(ts).toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'});
+const dt=ts=>{const d=new Date(ts),n=new Date();return d.toDateString()===n.toDateString()?hm(ts):d.toLocaleDateString('ru',{day:'numeric',month:'short'})};
+
+let token=localStorage.getItem('orbit_token'),me=null,chats=[],cur=null,msgs=[],es=null,mode='login',searchTimer=null;
+
+async function api(p,opt={}){
+ const r=await fetch('/api/'+p,{method:opt.body?'POST':'GET',
+  headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},
+  body:opt.body?JSON.stringify(opt.body):undefined});
+ const j=await r.json().catch(()=>({}));
+ if(!r.ok){const e=new Error(j.error||'Ошибка');e.status=r.status;throw e}
+ return j;
+}
+
+/* ---------- auth ---------- */
+function setMode(m){
+ mode=m;
+ $('f_name').classList.toggle('hidden',m==='login');
+ $('at').textContent=m==='login'?'Orbit':'Новый аккаунт';
+ $('go').textContent=m==='login'?'Войти':'Создать аккаунт';
+ $('sw').textContent=m==='login'?'Создать аккаунт':'У меня уже есть аккаунт';
+ $('err').textContent='';
+}
+$('sw').onclick=()=>setMode(mode==='login'?'register':'login');
+$('go').onclick=async()=>{
+ $('err').textContent='';
+ try{
+  const body={username:$('f_user').value,password:$('f_pass').value,name:$('f_name').value};
+  const j=await api(mode,{body});
+  token=j.token;localStorage.setItem('orbit_token',token);me=j.user;start();
+ }catch(e){$('err').textContent=e.message}
+};
+['f_name','f_user','f_pass'].forEach(i=>$(i).addEventListener('keydown',e=>{if(e.key==='Enter')$('go').click()}));
+
+async function boot(){
+ if(!token)return;
+ try{const j=await api('me');me=j.user;start()}catch(e){if(e.status===401){token=null;localStorage.removeItem('orbit_token')}}
+}
+
+function start(){
+ $('auth').classList.add('hidden');$('app').classList.remove('hidden');
+ loadChats();connect();
+}
+
+function logout(){
+ api('logout',{body:{}}).catch(()=>{});
+ if(es)es.close();
+ localStorage.removeItem('orbit_token');token=null;me=null;cur=null;
+ location.reload();
+}
+
+/* ---------- realtime ---------- */
+function connect(){
+ if(es)es.close();
+ es=new EventSource('/api/stream?token='+encodeURIComponent(token));
+ es.addEventListener('msg',e=>{
+  const m=JSON.parse(e.data);
+  const peer=m.from===me.username?m.to:m.from;
+  if(cur&&cur.username===peer){
+   if(!msgs.find(x=>x.id===m.id)){msgs.push(m);drawMsgs()}
+   if(m.from===peer)api('read',{body:{with:peer}}).then(loadChats).catch(()=>{});
+  }
+  loadChats();
+  if(m.from!==me.username&&(!cur||cur.username!==peer||document.hidden))notify(m);
+ });
+}
+function notify(m){
+ if(window.Notification&&Notification.permission==='granted'){
+  const u=chats.find(c=>c.username===m.from);
+  new Notification(u?u.name:'@'+m.from,{body:m.text});
+ }
+}
+
+/* ---------- chat list ---------- */
+async function loadChats(){
+ try{chats=(await api('chats')).chats}catch(e){return}
+ if(!$('q').value.trim())drawList();
+}
+function drawList(){
+ const l=$('list');
+ if(!chats.length){l.innerHTML='<div class="empty">Чатов пока нет.<br>Найдите друга по @юзернейму в поиске выше.</div>';return}
+ l.innerHTML=chats.map(c=>`<div class="item ${cur&&cur.username===c.username?'on':''}" data-u="${esc(c.username)}">
+  ${av(c.name,c.username)}<div class="meta"><div class="l1"><span class="nm">${esc(c.name)}</span><span class="tm">${dt(c.last.ts)}</span></div>
+  <div class="l2"><span class="pv">${c.last.mine?'Вы: ':''}${esc(c.last.text)}</span>${c.unread?`<span class="bdg">${c.unread}</span>`:''}</div></div></div>`).join('');
+ l.querySelectorAll('.item').forEach(el=>el.onclick=()=>{const c=chats.find(x=>x.username===el.dataset.u);openChat({username:c.username,name:c.name})});
+}
+$('q').addEventListener('input',()=>{
+ clearTimeout(searchTimer);
+ const v=$('q').value.trim();
+ if(!v){drawList();return}
+ searchTimer=setTimeout(async()=>{
+  try{
+   const {users}=await api('users/search?q='+encodeURIComponent(v));
+   $('list').innerHTML=`<div class="sect">Глобальный поиск</div>`+(users.length?users.map(u=>`<div class="item" data-u="${esc(u.username)}" data-n="${esc(u.name)}">
+    ${av(u.name,u.username)}<div class="meta"><div class="nm">${esc(u.name)}</div><div class="pv">@${esc(u.username)}</div></div></div>`).join(''):'<div class="empty">Никого не найдено</div>');
+   $('list').querySelectorAll('.item').forEach(el=>el.onclick=()=>{$('q').value='';openChat({username:el.dataset.u,name:el.dataset.n})});
+  }catch(e){}
+ },250);
+});
+
+/* ---------- conversation ---------- */
+async function openChat(u){
+ cur=u;$('app').classList.add('open');
+ $('conv').innerHTML=`<div class="head"><button class="back" id="bk">←</button>${av(u.name,u.username)}
+  <div><div class="nm">${esc(u.name)}</div><div class="sub">@${esc(u.username)}</div></div></div>
+  <div class="msgs" id="msgs"></div>
+  <div class="comp"><input id="mi" placeholder="Написать сообщение…" autocomplete="off"><button class="send" id="sd">➤</button></div>`;
+ $('bk').onclick=()=>{cur=null;$('app').classList.remove('open');drawList()};
+ $('sd').onclick=send;
+ $('mi').addEventListener('keydown',e=>{if(e.key==='Enter')send()});
+ try{
+  const j=await api('messages?with='+encodeURIComponent(u.username));
+  cur.name=j.peer.name;msgs=j.messages;drawMsgs();
+  await api('read',{body:{with:u.username}});loadChats();
+ }catch(e){}
+ if(window.matchMedia('(min-width:761px)').matches)$('mi').focus();
+ drawList();
+}
+function drawMsgs(){
+ const el=$('msgs');if(!el)return;
+ el.innerHTML=msgs.length?msgs.map(m=>`<div class="b ${m.from===me.username?'out':'in'}">${esc(m.text)}<i>${hm(m.ts)}</i></div>`).join('')
+  :'<div class="ph"><span>Сообщений пока нет. Напишите первым 👋</span></div>';
+ el.scrollTop=el.scrollHeight;
+}
+async function send(){
+ const inp=$('mi');const t=inp.value.trim();if(!t||!cur)return;
+ inp.value='';
+ try{await api('send',{body:{to:cur.username,text:t}})}catch(e){inp.value=t;alert(e.message)}
+}
+
+/* ---------- menu ---------- */
+$('menu').onclick=e=>{
+ e.stopPropagation();
+ const p=$('pop');
+ p.innerHTML=`<b>${esc(me.name)}</b><div>@${esc(me.username)}</div><button id="nt">🔔 Включить уведомления</button><button id="lo">↪ Выйти</button>`;
+ p.classList.toggle('hidden');
+ $('lo').onclick=logout;
+ $('nt').onclick=()=>{if(window.Notification)Notification.requestPermission();p.classList.add('hidden')};
+};
+document.addEventListener('click',()=>$('pop').classList.add('hidden'));
+
+boot();
+</script>
+</body>
+</html>
