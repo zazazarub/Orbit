@@ -370,6 +370,8 @@ async function api(req, res, url) {
   const route = req.method + ' ' + url.pathname;
   const q = url.searchParams;
 
+  if (route === 'GET /api/config') return json(res, 200, { emailVerify: mailConfigured() });
+
   if (route === 'POST /api/auth/code') {
     const b = await readBody(req);
     const email = cleanEmail(b.email);
@@ -419,8 +421,9 @@ async function api(req, res, url) {
   if (route === 'POST /api/register') {
     if (limited(req)) throw new E(429, 'Слишком много попыток, подождите');
     const b = await readBody(req);
-    const vt = db.vtokens[String(b.vtoken || '')];
-    if (!vt || vt.purpose !== 'register' || vt.exp < Date.now()) throw new E(400, 'Подтверждение почты истекло. Начните регистрацию заново.');
+    const noMail = !mailConfigured();
+    const vt = noMail ? { email: '' } : db.vtokens[String(b.vtoken || '')];
+    if (!vt || (!noMail && (vt.purpose !== 'register' || vt.exp < Date.now()))) throw new E(400, 'Подтверждение почты истекло. Начните регистрацию заново.');
     const username = cleanHandle(b.username);
     const name = String(b.name || '').trim().slice(0, 40);
     const password = String(b.password || '');
@@ -428,11 +431,11 @@ async function api(req, res, url) {
     if (!HANDLE.test(username)) throw new E(400, 'Юзернейм: 3-32 символа, латиница, цифры и _');
     if (password.length < 6) throw new E(400, 'Пароль минимум 6 символов');
     if (handles.has(username)) throw new E(409, 'Этот юзернейм уже занят');
-    if (byEmail.has(vt.email)) throw new E(409, 'Эта почта уже зарегистрирована');
+    if (vt.email && byEmail.has(vt.email)) throw new E(409, 'Эта почта уже зарегистрирована');
     const id = rnd(8), salt = rnd(16);
     db.users[id] = { id, username, email: vt.email, name, bio: '', avatar: null, salt, hash: hashPw(password, salt), created: Date.now(), seen: Date.now(), read: {} };
-    handles.set(username, { k: 'u', id }); byEmail.set(vt.email, id);
-    delete db.vtokens[b.vtoken];
+    handles.set(username, { k: 'u', id }); if (vt.email) byEmail.set(vt.email, id);
+    if (!noMail) delete db.vtokens[b.vtoken];
     const token = rnd(32); db.tokens[token] = id; persist();
     return json(res, 200, { token, user: selfU(db.users[id]) });
   }

@@ -355,6 +355,7 @@ if(window.matchMedia)matchMedia('(prefers-color-scheme:dark)').addEventListener(
 if(window.visualViewport){const f=()=>{document.documentElement.style.setProperty('--app-h',visualViewport.height+'px');if(visualViewport.height<window.innerHeight)window.scrollTo(0,0)};visualViewport.addEventListener('resize',f);f()}
 
 /* ============ AUTH (email code flow) ============ */
+let CFG={emailVerify:true};
 const A={step:'login',email:'',purpose:'register',vtoken:'',resendAt:0,iv:null};
 function field(icon,html){return '<div class="fld">'+IC[icon]+html+'</div>'}
 function authView(){
@@ -371,8 +372,8 @@ function authView(){
    +'<div class="err" id="aerr"></div><button class="primary" id="a_go">Войти</button><div class="alinks"><button class="link" id="a_reg">Создать аккаунт</button><button class="link" id="a_fg">Забыли пароль?</button></div>';
   bind('a_go');
   $('a_go').onclick=()=>run($('a_go'),async()=>onAuthed(await api('login',{login:$('a_l').value,password:$('a_p').value})));
-  $('a_reg').onclick=()=>{A.step='email';A.purpose='register';authView()};
-  $('a_fg').onclick=()=>{A.step='email';A.purpose='reset';authView()};
+  $('a_reg').onclick=()=>{A.step=CFG.emailVerify?'email':'profile';A.purpose='register';authView()};
+  if(!CFG.emailVerify)$('a_fg').remove();else $('a_fg').onclick=()=>{A.step='email';A.purpose='reset';authView()};
  }else if(A.step==='email'){
   b.innerHTML=head(reset?'Восстановление пароля':'Регистрация','Введите почту, мы отправим 6-значный код подтверждения')
    +field('mail','<input id="a_e" type="email" placeholder="Электронная почта" autocapitalize="off" autocomplete="email" inputmode="email" value="'+esc(A.email)+'">')
@@ -401,12 +402,13 @@ function authView(){
   $('a_rs').onclick=async()=>{try{await api('auth/code',{email:A.email,purpose:A.purpose});A.resendAt=Date.now()+60000;setErr('');toast('Код отправлен повторно');tick()}catch(e){setErr(e.message)}};
   tick();A.iv=setInterval(tick,1000);$('a_c').focus();
  }else if(A.step==='profile'){
-  b.innerHTML=head('Создайте профиль','Почта подтверждена. Осталось придумать имя, юзернейм и пароль')
+  b.innerHTML=head('Создайте профиль',CFG.emailVerify?'Почта подтверждена. Осталось придумать имя, юзернейм и пароль':'Придумайте имя, юзернейм и пароль')
    +field('user','<input id="a_n" placeholder="Ваше имя" maxlength="40" autocomplete="name">')
    +field('at','<input id="a_u" placeholder="юзернейм" maxlength="32" autocapitalize="off" autocomplete="username">')
    +'<div class="hint">Латиница, цифры и _ , от 3 символов. По юзернейму вас найдут друзья.</div>'
    +field('lock','<input id="a_p" type="password" placeholder="Пароль (от 6 символов)" autocomplete="new-password">')
-   +'<div class="err" id="aerr"></div><button class="primary" id="a_go">Создать аккаунт</button>';
+   +'<div class="err" id="aerr"></div><button class="primary" id="a_go">Создать аккаунт</button>'+(CFG.emailVerify?'':'<div class="alinks"><button class="link" id="a_bk">Назад ко входу</button></div>');
+  if(!CFG.emailVerify)$('a_bk').onclick=()=>{A.step='login';authView()};
   bind('a_go');
   $('a_go').onclick=()=>run($('a_go'),async()=>onAuthed(await api('register',{vtoken:A.vtoken,name:$('a_n').value,username:$('a_u').value,password:$('a_p').value})));
   $('a_n').focus();
@@ -421,6 +423,7 @@ function authView(){
 }
 function onAuthed(j){token=j.token;localStorage.setItem('orbita_token',token);me=j.user;start()}
 async function boot(){
+ try{CFG=await (await fetch('/api/config')).json()}catch(e){}
  if(!token){authView();return}
  try{me=(await api('me')).user;start()}catch(e){if(e.status===401){token=null;localStorage.removeItem('orbita_token')}authView()}
 }
